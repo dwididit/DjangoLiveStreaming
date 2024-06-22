@@ -1,16 +1,21 @@
-# DjangoLiveStreaming/views.py
+import uuid
 from rest_framework import viewsets, permissions, status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view, permission_classes
 from django.contrib.auth import authenticate, login, logout
-from rest_framework.authtoken.models import Token
 from django.contrib.auth import get_user_model
-from rest_framework_simplejwt.tokens import RefreshToken
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 from .models import Stream, Donation, Comment
 from .serializers import UserSerializer, StreamSerializer, DonationSerializer, CommentSerializer
 from .dtos import ResponseDTO
+import logging
+
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -81,12 +86,20 @@ def login_user(request):
 @permission_classes([IsAuthenticated])
 def logout_user(request):
     try:
-        refresh_token = request.data["refresh_token"]
+        refresh_token = request.data.get('refresh_token')
+        if not refresh_token:
+            return Response({"code": 400, "message": "Refresh token is required."}, status=status.HTTP_400_BAD_REQUEST)
+
         token = RefreshToken(refresh_token)
         token.blacklist()
-        return Response(ResponseDTO(code=200, message="Logout successful.", data=None).__dict__)
+
+        return Response({"code": 200, "message": "Logout successful"})
+    except TokenError:
+        return Response({"code": 400, "message": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
+    except InvalidToken:
+        return Response({"code": 400, "message": "Invalid refresh token"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
-        return Response(ResponseDTO(code=400, message="Invalid token.", data=None).__dict__, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"code": 500, "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class StreamViewSet(viewsets.ModelViewSet):
@@ -96,6 +109,25 @@ class StreamViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(streamer=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        response_data = {
+            'code': status.HTTP_201_CREATED,
+            'message': 'Stream created successfully',
+            'data': response.data
+        }
+        return Response(response_data, status=status.HTTP_201_CREATED)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        response_data = {
+            'code': status.HTTP_200_OK,
+            'message': 'Stream retrieved successfully',
+            'data': serializer.data
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def start(self, request, pk=None):
@@ -113,13 +145,62 @@ class StreamViewSet(viewsets.ModelViewSet):
         response = ResponseDTO(code=200, message="Stream stopped", data=StreamSerializer(stream).data)
         return Response(response.__dict__)
 
+
 class DonationViewSet(viewsets.ModelViewSet):
     queryset = Donation.objects.all()
     serializer_class = DonationSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['stream']
 
     def perform_create(self, serializer):
-        serializer.save(donor=self.request.user)
+        transaction_id = uuid.uuid4()
+        serializer.save(donor=self.request.user, transaction_id=transaction_id)
+
+        # Send notification to the Redis channel layer
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'stream_{serializer.instance.stream_id}',
+            {
+                'type': 'stream_message',
+                'message': f'New donation: Rp {serializer.instance.amount}'
+            }
+        )
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        response_data = {
+            'code': status.HTTP_201_CREATED,
+            'message': 'Donation created successfully',
+            'data': response.data
+        }
+        return Response(response_data, status=status.HTTP_201_CREATED)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        response_data = {
+            'code': status.HTTP_200_OK,
+            'message': 'Donation retrieved successfully',
+            'data': serializer.data
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        response_data = {
+            'code': status.HTTP_200_OK,
+            'message': 'Donations retrieved successfully',
+            'data': serializer.data
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
+
 
     @action(detail=True, methods=['post'])
     def confirm(self, request, pk=None):
@@ -129,10 +210,58 @@ class DonationViewSet(viewsets.ModelViewSet):
         response = ResponseDTO(code=200, message="Donation confirmed", data=DonationSerializer(donation).data)
         return Response(response.__dict__)
 
+
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['stream']
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+        # Send notification to the Redis channel layer
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'stream_{serializer.instance.stream_id}',
+            {
+                'type': 'stream_message',
+                'message': f'New comment: {serializer.instance.content}'
+            }
+        )
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        response_data = {
+            'code': status.HTTP_201_CREATED,
+            'message': 'Comment created successfully',
+            'data': [response.data]
+        }
+        return Response(response_data, status=status.HTTP_201_CREATED)
+
+    def retrieve(self, request, *args, **kwargs):
+        stream_id = kwargs.get('pk')
+        comments = self.get_queryset().filter(stream_id=stream_id)
+        serializer = self.get_serializer(comments, many=True)
+        response_data = {
+            'code': status.HTTP_200_OK,
+            'message': 'Comments retrieved successfully',
+            'data': serializer.data
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        response_data = {
+            'code': status.HTTP_200_OK,
+            'message': 'Comments retrieved successfully',
+            'data': serializer.data
+        }
+        return Response(response_data, status=status.HTTP_200_OK)

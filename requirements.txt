@@ -1,6 +1,11 @@
 Django>=4.0,<5.0
 djangorestframework
-djangorestframework-simplejwt
+djangorestframework-simplejwt[blacklist]
 channels
 channels-redis
 daphne
+gunicorn
+watchdog
+whitenoise
+django-filter
+dj_database_url

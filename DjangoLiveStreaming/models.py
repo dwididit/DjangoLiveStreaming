@@ -1,4 +1,6 @@
 # DjangoLiveStreaming/models.py
+import uuid
+
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
@@ -21,7 +23,7 @@ class Donation(models.Model):
     donor = models.ForeignKey(User, related_name='donations', on_delete=models.CASCADE)
     payment_method = models.CharField(max_length=50)
     status = models.CharField(max_length=50, default='pending')
-    transaction_id = models.CharField(max_length=255, blank=True, null=True)
+    transaction_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

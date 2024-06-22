@@ -17,8 +17,8 @@ urlpatterns = [
     path('api/logout/', views.logout_user, name='logout_user'),
     path('api/donations/create/', views.DonationViewSet.as_view({'post': 'create'}), name='create_donation'),
     path('api/donations/<int:pk>/confirm/', views.DonationViewSet.as_view({'post': 'confirm'}), name='confirm_donation'),
-    path('api/donations/', views.DonationViewSet.as_view({'get': 'stream_donations'}), name='stream_donations'),
+    path('api/donations/', views.DonationViewSet.as_view({'get': 'list'}), name='stream_donations'),
     path('api/comments/create/', views.CommentViewSet.as_view({'post': 'create'}), name='create_comment'),
-    path('api/comments/<int:stream_id>/', views.CommentViewSet.as_view({'get': 'stream_comments'}), name='stream_comments'),
+    path('api/comments/<int:pk>/', views.CommentViewSet.as_view({'get': 'retrieve'}), name='stream_comments'),
     path('api/', include(router.urls)),
 ]
