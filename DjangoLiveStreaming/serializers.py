@@ -29,13 +29,40 @@ class StreamSerializer(serializers.ModelSerializer):
     class Meta:
         model = Stream
         fields = ['id', 'title', 'description', 'streamer', 'is_active', 'created_at', 'updated_at']
+        extra_kwargs = {
+            'streamer': {'required': False}
+        }
+
+    def create(self, validated_data):
+        request = self.context.get('request', None)
+        if request and request.user.is_authenticated:
+            validated_data['streamer'] = request.user
+        return super().create(validated_data)
 
 class DonationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Donation
         fields = ['id', 'amount', 'message', 'stream', 'donor', 'payment_method', 'status', 'transaction_id', 'created_at', 'updated_at']
+        extra_kwargs = {
+            'donor': {'required': False}
+        }
+
+    def create(self, validated_data):
+        request = self.context.get('request', None)
+        if request and request.user.is_authenticated:
+            validated_data['donor'] = request.user
+        return super().create(validated_data)
 
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
-        fields = ['id', 'content', 'user', 'stream', 'created_at', 'updated_at']
+        fields = ['id', 'content', 'stream', 'user', 'created_at', 'updated_at']
+        extra_kwargs = {
+            'user': {'required': False}
+        }
+
+    def create(self, validated_data):
+        request = self.context.get('request', None)
+        if request and request.user.is_authenticated:
+            validated_data['user'] = request.user
+        return super().create(validated_data)
