@@ -3,11 +3,31 @@ from pathlib import Path
 import os
 import dj_database_url
 
+# Database configuration
 DATABASES = {
     'default': dj_database_url.config(
         default=f'postgres://{os.getenv("POSTGRES_USER")}:{os.getenv("POSTGRES_PASSWORD")}@{os.getenv("SQL_HOST")}:{os.getenv("SQL_PORT")}/{os.getenv("POSTGRES_DB")}'
     )
 }
+
+# Redis configuration
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://redis:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Jakarta'
+
+
+# Email configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST')
+EMAIL_PORT = os.getenv('EMAIL_PORT')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'true').lower() in ['true', '1']
+EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'false').lower() in ['true', '1']
+DEFAULT_FROM_EMAIL = f"{os.getenv('MAIL_FROM_NAME')} <{os.getenv('MAIL_FROM_EMAIL')}>"
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,6 +49,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'channels',
     'DjangoLiveStreaming',
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [

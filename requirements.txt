@@ -9,3 +9,5 @@ watchdog
 whitenoise
 django-filter
 dj_database_url
+django_celery_results
+celery

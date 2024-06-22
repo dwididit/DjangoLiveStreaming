@@ -9,6 +9,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from .tasks import process_donation, send_donation_email
 
 from .models import Stream, Donation, Comment
 from .serializers import UserSerializer, StreamSerializer, DonationSerializer, CommentSerializer
@@ -156,6 +157,10 @@ class DonationViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         transaction_id = uuid.uuid4()
         serializer.save(donor=self.request.user, transaction_id=transaction_id)
+
+        # Trigger Celery tasks asynchronously
+        process_donation.delay(serializer.instance.id)
+        send_donation_email.delay(serializer.instance.id)
 
         # Send notification to the Redis channel layer
         channel_layer = get_channel_layer()
