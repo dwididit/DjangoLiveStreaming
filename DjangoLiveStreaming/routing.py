@@ -1,6 +1,6 @@
-from django.urls import re_path
-from .consumers import StreamConsumer
+from django.urls import path
+from DjangoLiveStreaming import consumers
 
 websocket_urlpatterns = [
-    re_path(r'ws/stream/(?P<stream_id>\d+)/$', StreamConsumer.as_asgi()),
+    path('ws/stream/<int:stream_id>/', consumers.StreamConsumer.as_asgi()),
 ]

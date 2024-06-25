@@ -1,19 +1,20 @@
 import os
 from django.core.asgi import get_asgi_application
-from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.auth import AuthMiddlewareStack
-from channels.security.websocket import AllowedHostsOriginValidator
-import DjangoLiveStreaming.routing
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'DjangoLiveStreaming.settings')
 
+# Initialize Django ASGI application early to ensure the apps are loaded properly.
+django_asgi_app = get_asgi_application()
+
+from channels.routing import ProtocolTypeRouter, URLRouter
+from DjangoLiveStreaming.routing import websocket_urlpatterns
+from DjangoLiveStreaming.middleware import TokenAuthMiddleware
+
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
-    "websocket": AllowedHostsOriginValidator(
-        AuthMiddlewareStack(
-            URLRouter(
-                DjangoLiveStreaming.routing.websocket_urlpatterns
-            )
+    "websocket": TokenAuthMiddleware(
+        URLRouter(
+            websocket_urlpatterns
         )
     ),
 })
