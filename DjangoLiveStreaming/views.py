@@ -3,18 +3,21 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view, permission_classes
+from django.core.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth import get_user_model
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from .tasks import process_donation, send_donation_email
+from .tasks import process_donation, send_donation_notification_email
 
 from .models import Stream, Donation, Comment
 from .serializers import UserSerializer, StreamSerializer, DonationSerializer, CommentSerializer
 from .dtos import ResponseDTO
 import logging
+
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +133,17 @@ class StreamViewSet(viewsets.ModelViewSet):
         }
         return Response(response_data, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['get'])
+    def all_streams(self, request):
+        streams = Stream.objects.all()
+        serializer = self.get_serializer(streams, many=True)
+        response_data = {
+            'code': status.HTTP_200_OK,
+            'message': 'Streams retrieved successfully',
+            'data': serializer.data
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
+
     @action(detail=True, methods=['post'])
     def start(self, request, pk=None):
         stream = self.get_object()
@@ -155,12 +169,21 @@ class DonationViewSet(viewsets.ModelViewSet):
     filterset_fields = ['stream']
 
     def perform_create(self, serializer):
+        stream = serializer.validated_data['stream']
+        if stream.streamer == self.request.user:
+            response_data = {
+                'code': status.HTTP_400_BAD_REQUEST,
+                'message': 'You cannot donate to your own streams.',
+                'data': None
+            }
+            raise DRFValidationError(response_data)
+
         transaction_id = uuid.uuid4()
         serializer.save(donor=self.request.user, transaction_id=transaction_id)
 
         # Trigger Celery tasks asynchronously
         process_donation.delay(serializer.instance.id)
-        send_donation_email.delay(serializer.instance.id)
+        send_donation_notification_email.delay(serializer.instance.id)
 
         # Send notification to the Redis channel layer
         channel_layer = get_channel_layer()
@@ -168,7 +191,7 @@ class DonationViewSet(viewsets.ModelViewSet):
             f'stream_{serializer.instance.stream_id}',
             {
                 'type': 'stream_message',
-                'message': f'New donation: Rp {serializer.instance.amount}'
+                'message': f'New donation: Rp {serializer.instance.amount}, Message: {serializer.instance.message}'
             }
         )
 

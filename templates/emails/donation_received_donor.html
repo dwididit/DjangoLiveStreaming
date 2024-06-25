@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thank You for Your Donation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            color: #343a40;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .header {
+            background-color: #9146ff;
+            color: #ffffff;
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 2px solid #772ce8;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 32px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .content p {
+            margin: 10px 0;
+            line-height: 1.8;
+            font-size: 18px;
+        }
+        .content .highlight {
+            font-weight: bold;
+            color: #9146ff;
+        }
+        .footer {
+            text-align: center;
+            padding: 10px 0;
+            background-color: #f1f1f1;
+            border-top: 1px solid #e9ecef;
+        }
+        .footer p {
+            margin: 0;
+            font-size: 14px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Thank You for Your Donation!</h1>
+    </div>
+    <div class="content">
+        <p>Dear <span class="highlight">{{ donation.donor.username }}</span>,</p>
+        <p>Thank you for your generous donation of <span class="highlight">Rp {{ donation.amount }}</span> to <span class="highlight">{{ donation.stream.title }}</span>.</p>
+        <p>Your support is crucial to our mission and helps us make a significant impact.</p>
+        <p>If you have any questions or need further assistance, please don't hesitate to contact us.</p>
+        <p>Thank you once again for your generosity.</p>
+    </div>
+    <div class="footer">
+        <p>&copy; 2024 Django Live Streaming By Dwi Didit Prasetiyo. All rights reserved.</p>
+        <p>1234 Main Street, Suite 100, Jakarta, Indonesia</p>
+    </div>
+</div>
+</body>
+</html>

@@ -11,3 +11,7 @@ django-filter
 dj_database_url
 django_celery_results
 celery
+redis
+django-cors-headers
+python-decouple
+django-decouple
