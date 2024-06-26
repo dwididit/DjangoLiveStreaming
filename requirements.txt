@@ -16,3 +16,4 @@ django-cors-headers
 python-decouple
 django-decouple
 psycopg2-binary
+faker
