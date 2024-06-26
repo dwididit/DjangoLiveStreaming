@@ -80,12 +80,12 @@ TEMPLATES = [
 WSGI_APPLICATION = 'DjangoLiveStreaming.wsgi.application'
 ASGI_APPLICATION = 'DjangoLiveStreaming.asgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
