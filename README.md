@@ -357,8 +357,8 @@ docker-compose up --build
 docker-compose run web python manage.py generate_dummy_data
 ```
 
-**Verify the Superuser and Data in Django Admin:**
-- Access the Django admin interface at http://127.0.0.1:8000/admin/.
+4. Verify the Superuser and Data in Django Admin:
+- Access the Django admin interface at http://127.0.0.1:8000/admin/
 - Log in using the superuser credentials:
   - Username: admin 
   - Password: admin
