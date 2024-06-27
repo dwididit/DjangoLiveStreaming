@@ -10,7 +10,7 @@ class Command(BaseCommand):
     help = 'Generate dummy data for the application and create a superuser'
 
     def handle(self, *args, **kwargs):
-        fake = Faker()
+        fake = Faker('id_ID')
 
         # Create superuser
         if not User.objects.filter(username='admin').exists():
