@@ -310,7 +310,44 @@ gh repo clone dwididit/DjangoLiveStreaming
 cd DjangoLiveStreaming/
 ```
 
-2. Build and run with Docker Compose
+2. Create `.env` file.
+```bash
+# Database configuration
+POSTGRES_DB=mydatabase
+POSTGRES_USER=myuser
+POSTGRES_PASSWORD=mypassword
+SQL_HOST=db
+SQL_PORT=5432
+
+# Redis configuration
+REDIS_HOST=redis
+REDIS_PORT=6379
+
+# Celery configuration
+CELERY_BROKER_URL=redis://redis:6379/0
+CELERY_RESULT_BACKEND=redis://redis:6379/0
+
+# Email configuration
+EMAIL_HOST=smtp-host.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=user@example.com
+EMAIL_HOST_PASSWORD=password
+EMAIL_USE_TLS=true
+EMAIL_USE_SSL=false
+MAIL_FROM_EMAIL=sender@example.com
+MAIL_FROM_NAME=Live Streaming App By Dwi Didit Prasetiyo
+
+
+# CORS configuration
+CORS_ALLOWED_ORIGINS=http://localhost:8081
+CORS_ALLOW_ALL_ORIGINS=False
+CORS_ALLOW_CREDENTIALS=True
+
+# Frontend configuration
+VUE_APP_BACKEND_URL=http://127.0.0.1:8000/api
+```
+
+4. Build and run with Docker Compose
 ```bash
 docker-compose up --build
 ```
