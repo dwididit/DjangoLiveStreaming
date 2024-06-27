@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:latest
+    container_name: djangolivestreaming_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
@@ -12,6 +13,7 @@ services:
 
   redis:
     image: redis:latest
+    container_name: djangolivestreaming_redis
     ports:
       - "6379:6379"
 
@@ -19,6 +21,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: djangolivestreaming_web
     env_file:
       - .env
     volumes:
@@ -34,6 +37,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: djangolivestreaming_celery_worker
     command: celery -A DjangoLiveStreaming worker -l info
     env_file:
       - .env

@@ -51,7 +51,7 @@ class Command(BaseCommand):
         for stream in streams:
             for _ in range(5):
                 donation = Donation.objects.create(
-                    amount=round(random.uniform(10.0, 100.0), 2),
+                    amount=round(random.uniform(10000, 100000), 2),
                     message=fake.sentence(),
                     stream=stream,
                     donor=random.choice(donors),
